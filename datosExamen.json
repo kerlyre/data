@@ -1,0 +1,124 @@
+console.log ("Hello World")
+
+d3.json ("datosExamen.json").then (function (datos){
+
+console.log ("Ya he cargado correctamente los datos")
+console.log(datos)	
+
+// se define la altura y ancho
+    var height = 400
+    var width = 900
+	
+ //se define los margenes
+    var margin = {
+        top: 60,
+        botton: 40,
+        left: 40,
+        right: 50     
+
+    }	
+	
+
+var elementosvg=d3.select ("body")
+        .append("svg")
+        .attr("width",width)
+        .attr("height",height)
+
+//2.	El eje Y representa la nota del alumno. El eje X representa el ranking del alumno.
+var escalaX = d3.scaleLinear()
+        .domain ([0, d3.max(datos, d=> d.ranking)])
+        .range ([0 + margin.left, width - margin.right])
+
+  
+        
+var escalaY = d3.scaleLinear()
+        .domain ([0, d3.max(datos, d=> d.nota )])
+        .range ([height-margin.botton, 0 + margin.top])	 
+
+// VISUALIZAMOS EJE X
+var ejeX = d3.axisBottom (escalaX)    
+    // PONER TICKS
+        .ticks (5)
+        .tickFormat (d3.format(".3s"))
+
+  //Pintar eje X
+ elementosvg
+        .append("g")
+        .attr("transform","translate (0," + (height - margin.botton+5) + ")")
+        .call(ejeX)
+
+	// VISUALIZAMOS EJE Y
+var ejeY = d3.axisLeft (escalaY)
+
+   //Pintar eje Y
+elementosvg
+ //estas dos líneas antes del .call (ejeY). MUEVEN EL EJE 
+ .append("g")
+  .attr("transform","translate (" + margin.left + ",0)")
+ .transition()
+  .duration (1000)
+  .ease(d3.easeBackIn)
+  //.ease (d3.easeBounce) 
+  .delay (500)  //Demora inicio animación
+  .call(ejeY)
+	
+//graficar color y tamanio
+//3.	El tamaño del círculo es proporcional a la nota obtenida por el alumno.
+//4.	El color se obtiene aplicando una escala en función de la nota obtenida.
+
+var escala_tamanio = d3.scaleLinear()
+        .domain(d3.extent(datos, d => d.nota))
+        .range([2,25])
+    
+var escalaColor = d3.scaleLinear ()
+        .domain (d3.extent(datos, d=> d.nota))
+        .range (["red", "green"])
+
+    
+
+ elementosvg
+        .selectAll("circle") 
+        .data(datos) 
+        .enter()
+        .append ("circle")
+        .attr("r",d => escala_tamanio(d.nota)) 
+        .attr ("cx", d => escalaX(d.ranking))
+        .attr("cy",d => escalaY(d.nota))
+	    .attr ("fill", d => escalaColor(d.nota))
+	    .on ("mouseover", d => {
+              //se genera evento cuando se pasa el mouse sobre los circulos
+               pintarTooltip (d)
+        })
+        .on ("mouseout", borrarTooltip)
+        
+
+
+// Define the div for the tooltip
+var tooltip = d3.select("body").append("div")	
+          .attr("class", "tooltip")				
+          .style("opacity", 0);
+     
+
+     //BORRAR TOOLTIP
+function borrarTooltip(){
+         tooltip    
+           // .transition()
+            .style("opacity",0)         
+}
+    
+    //PINTAR TOOLTIP
+function pintarTooltip(d){
+        tooltip
+            //.text (d.partido)
+            .text(d.alumno + " -*- " + d.ranking)
+            .style ("top", d3.event.pageY + "px")  // TçE DA LA POSICION DONDE SE HA PRODUCIDO EL EVENTO
+            .style ("left", d3.event.pageX + "px")
+            // PARA QUE LA APRICION DEL TOOLTIP NO SEA BRUSCA
+           //.transition()
+            .style("opacity",1)
+        
+    }
+
+
+    
+})
